@@ -15,6 +15,20 @@ class GeminiChatService
 
     public function generateReply(string $systemInstruction, array $history, string $userMessage): string
     {
+        $contents = [];
+        foreach ($history as $item) {
+            $contents[] = [
+                'role' => $item['sender'] === 'assistant' ? 'model' : 'user',
+                'parts' => [['text' => $item['message']]],
+            ];
+        }
+        $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
+
+        return $this->complete($systemInstruction, $contents, 1024, 0.7);
+    }
+
+    public function complete(string $systemInstruction, array $contents, int $maxTokens, float $temperature): string
+    {
         $config = config('services.gemini');
         $key = $config['key'] ?? null;
 
@@ -25,15 +39,6 @@ class GeminiChatService
         $model = $config['model'] ?? 'gemini-2.0-flash';
         $timeout = (int) ($config['timeout'] ?? 30);
 
-        $contents = [];
-        foreach ($history as $item) {
-            $contents[] = [
-                'role' => $item['sender'] === 'assistant' ? 'model' : 'user',
-                'parts' => [['text' => $item['message']]],
-            ];
-        }
-        $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
-
         try {
             $response = Http::timeout($timeout)
                 ->acceptJson()
@@ -41,7 +46,7 @@ class GeminiChatService
                     'key' => $key,
                     'system_instruction' => ['parts' => [['text' => $systemInstruction]]],
                     'contents' => $contents,
-                    'generationConfig' => ['maxOutputTokens' => 1024, 'temperature' => 0.7],
+                    'generationConfig' => ['maxOutputTokens' => $maxTokens, 'temperature' => $temperature],
                 ]);
         } catch (ConnectionException $e) {
             throw new GeminiUnavailableException('Layanan AI tidak dapat dihubungi. Coba lagi nanti.');

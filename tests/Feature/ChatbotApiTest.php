@@ -20,13 +20,16 @@ class ChatbotApiTest extends TestCase
 
     private CulturalContent $draft;
 
-    private function fakeGemini(string $reply = 'Halo! Senang membahas budaya Indonesia.') : void
+    private function fakeGemini(string $reply = 'Halo! Senang membahas budaya Indonesia.', string $scope = 'in_scope') : void
     {
-        Http::fake([
-            '*' => Http::response([
-                'candidates' => [['content' => ['parts' => [['text' => $reply]]]]],
-            ], 200),
-        ]);
+        Http::fake(function ($request) use ($reply, $scope) {
+            $sys = json_encode($request->data()['system_instruction'] ?? []);
+            $text = str_contains($sys, 'KLASIFIKASI_CAKUPAN') ? $scope : $reply;
+
+            return Http::response([
+                'candidates' => [['content' => ['parts' => [['text' => $text]]]]],
+            ], 200);
+        });
     }
 
     protected function setUp(): void

@@ -1,0 +1,48 @@
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { NAV_LINKS } from "@/components/layout/nav-links";
+import { NavbarInner } from "@/components/layout/NavbarInner";
+
+/** Tampilan statis saat `usePathname()` belum tersedia di proses prerender. */
+function NavbarFallback() {
+  return (
+    <header className="sticky top-0 z-50 bg-night text-[#f3efe4]">
+      <div className="shell grid h-[72px] grid-cols-[1fr_auto] items-center lg:grid-cols-[1fr_auto_1fr]">
+        <Link
+          href="/"
+          className="focus-ring justify-self-start text-[19px] font-normal tracking-[0.02em] text-[#f6f2e7]"
+          aria-label="GaleriBudaya — Beranda"
+        >
+          Galeri<span className="text-amber">Budaya</span>
+        </Link>
+
+        <nav
+          aria-label="Navigasi utama"
+          className="hidden items-center gap-12 lg:flex xl:gap-14"
+        >
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="focus-ring text-[13.5px] tracking-[0.07em] text-[#efeade]/90 transition-colors hover:text-white"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden lg:block" aria-hidden="true" />
+        <div className="h-9 w-9 justify-self-end lg:hidden" aria-hidden="true" />
+      </div>
+    </header>
+  );
+}
+
+export function Navbar() {
+  return (
+    <Suspense fallback={<NavbarFallback />}>
+      <NavbarInner />
+    </Suspense>
+  );
+}

@@ -1,0 +1,108 @@
+import { notFound } from "next/navigation";
+
+import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+
+/**
+ * Route placeholder membaca `params`/`searchParams` runtime, jadi sengaja
+ * dibuat blocking (bukan prerender) sesuai mekanisme cacheComponents Next 16.
+ */
+export const instant = false;
+
+interface SectionPageProps {
+  params: Promise<{ section: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const SECTIONS: Record<
+  string,
+  { title: string; description: string; eyebrow?: string }
+> = {
+  jelajah: {
+    title: "Jelajah Indonesia",
+    description:
+      "Halaman penjelajahan budaya akan tersedia pada tahap berikutnya. Sementara itu, konten pilihan sudah tampil di Home.",
+  },
+  galeri: {
+    title: "Galeri Budaya",
+    description:
+      "Galeri publik, unggahan dokumentasi, status moderasi, dan pelaporan akan tersedia pada tahap berikutnya.",
+  },
+  profil: {
+    title: "Profil",
+    description:
+      "Masuk, profil pengguna, dan daftar kiriman akan tersedia pada tahap berikutnya.",
+  },
+  tentang: {
+    title: "Tentang Kami",
+    description:
+      "Halaman tentang ruang budaya sedang disiapkan. Beberapa cerita pengantar sudah bisa dibaca di Home.",
+  },
+  "panduan-kontribusi": {
+    title: "Panduan Kontribusi",
+    description:
+      "Panduan lengkap untuk mengunggah dokumentasi budaya akan tersedia bersama fitur galeri.",
+  },
+  privasi: {
+    title: "Privasi",
+    description:
+      "Kebijakan privasi akan dipublikasikan sebelum fitur akun dan unggahan dibuka.",
+  },
+  ketentuan: {
+    title: "Ketentuan Penggunaan",
+    description:
+      "Ketentuan penggunaan akan dipublikasikan sebelum fitur akun dan unggahan dibuka.",
+  },
+  kuis: {
+    title: "Kuis Aksara",
+    description:
+      "Pembelajaran aksara dan kuis akan tersedia pada tahap berikutnya.",
+  },
+  chatbot: {
+    title: "Chatbot Budaya",
+    description:
+      "Asisten budaya berbasis AI akan tersedia pada tahap berikutnya.",
+  },
+};
+
+function firstValue(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+}
+
+export default async function SectionPage({
+  params,
+  searchParams,
+}: SectionPageProps) {
+  const { section } = await params;
+  const page = SECTIONS[section];
+
+  if (!page) {
+    notFound();
+  }
+
+  const query = await searchParams;
+  const searchTerm = firstValue(query.q);
+  const category = firstValue(query.kategori);
+
+  let detail: string | null = null;
+
+  if (section === "jelajah") {
+    if (searchTerm) {
+      detail = `Pencarian “${searchTerm}” belum dapat ditampilkan karena halaman jelajah belum dibangun.`;
+    } else if (category) {
+      detail = `Filter kategori “${category.replaceAll("_", " ")}” belum dapat ditampilkan karena halaman jelajah belum dibangun.`;
+    }
+  }
+
+  return (
+    <PlaceholderPage
+      title={page.title}
+      description={page.description}
+      eyebrow={page.eyebrow}
+      detail={detail}
+    />
+  );
+}

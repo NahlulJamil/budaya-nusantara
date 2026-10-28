@@ -3,6 +3,7 @@ import Link from "next/link";
 const JELAJAH_LINKS = [
   { href: "/jelajah", label: "Jelajah Indonesia" },
   { href: "/galeri", label: "Galeri" },
+  { href: "/aksara", label: "Belajar Aksara" },
   { href: "/kuis", label: "Kuis Aksara" },
   { href: "/chatbot", label: "Chatbot Budaya" },
 ];

@@ -91,6 +91,8 @@ class GaleriController extends Controller
         ]);
 
         // Status dikunci di sisi server; input status dari client selalu diabaikan.
+        // Kebijakan produk: tidak ada moderasi admin — kiriman valid langsung
+        // dipublikasikan agar tampil di galeri publik.
         $post = GaleriPost::create([
             'user_id' => $request->user()->id,
             'content_id' => $validated['content_id'],
@@ -98,7 +100,7 @@ class GaleriController extends Controller
             'caption' => $validated['caption'] ?? null,
             'location' => $validated['location'] ?? null,
             'activity_date' => $validated['activity_date'] ?? null,
-            'status' => 'pending',
+            'status' => 'approved',
         ]);
 
         foreach ($request->file('media', []) as $file) {
@@ -113,7 +115,7 @@ class GaleriController extends Controller
         $post->load(['user', 'culturalContent', 'media']);
 
         return response()->json([
-            'message' => 'Kiriman dibuat dan menunggu moderasi.',
+            'message' => 'Kiriman berhasil diunggah dan langsung tampil di galeri.',
             'data' => $this->summary($post),
         ], 201);
     }

@@ -9,6 +9,7 @@ use App\Models\BajuAdatVariant;
 use App\Models\CulturalContent;
 use App\Models\Makanan;
 use App\Models\Tradisi;
+use App\Support\ManagedMedia;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class AdminBudayaController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate($this->rules());
+        $validated = $this->normalizeMediaFields($request->validate($this->rules()));
 
         if ($validated['category'] === 'tradisi') {
             $this->validateTradisiDetail($request);
@@ -125,7 +126,8 @@ class AdminBudayaController extends Controller
             return response()->json(['message' => 'Konten budaya tidak ditemukan.'], 404);
         }
 
-        $validated = $request->validate($this->rules(true));
+        $validated = $this->normalizeMediaFields($request->validate($this->rules(true)));
+        $oldMediaPaths = ManagedMedia::pathsFor($content);
         $oldCategory = $content->getOriginal('category');
         $newCategory = $validated['category'] ?? $oldCategory;
         $categoryChanged = $newCategory !== $oldCategory;
@@ -154,6 +156,8 @@ class AdminBudayaController extends Controller
             }
         });
 
+        ManagedMedia::deleteObsolete($oldMediaPaths, ManagedMedia::pathsFor($content->fresh()));
+
         return response()->json([
             'message' => 'Konten budaya diperbarui.',
             'data' => ['id' => $content->id, 'status' => $content->fresh()->status],
@@ -168,7 +172,13 @@ class AdminBudayaController extends Controller
             return response()->json(['message' => 'Konten budaya tidak ditemukan.'], 404);
         }
 
-        $content->delete();
+        $oldMediaPaths = ManagedMedia::pathsFor($content);
+
+        DB::transaction(function () use ($content): void {
+            $content->delete();
+        });
+
+        ManagedMedia::deleteObsolete($oldMediaPaths, []);
 
         return response()->json(['message' => 'Konten budaya dihapus.']);
     }
@@ -205,6 +215,46 @@ class AdminBudayaController extends Controller
             'detail.audio' => ['nullable', 'string', 'max:255'],
             'detail.interactive_asset_id' => ['nullable', 'integer', 'exists:interactive_assets,id'],
         ];
+    }
+
+    /**
+     * Ubah string media kosong menjadi `null` tanpa mengubah path/URL lama.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizeMediaFields(array $validated): array
+    {
+        if (array_key_exists('main_image', $validated)) {
+            $validated['main_image'] = $this->cleanMediaPath($validated['main_image']);
+        }
+
+        if (! is_array($validated['detail'] ?? null)) {
+            return $validated;
+        }
+
+        if (array_key_exists('audio', $validated['detail'])) {
+            $validated['detail']['audio'] = $this->cleanMediaPath($validated['detail']['audio']);
+        }
+
+        foreach ($validated['detail']['variants'] ?? [] as $index => $variant) {
+            if (is_array($variant) && array_key_exists('avatar_image', $variant)) {
+                $validated['detail']['variants'][$index]['avatar_image'] = $this->cleanMediaPath($variant['avatar_image']);
+            }
+        }
+
+        return $validated;
+    }
+
+    private function cleanMediaPath(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $path = trim($value);
+
+        return $path === '' ? null : $path;
     }
 
     private function validateTradisiDetail(Request $request): void
@@ -264,7 +314,9 @@ class AdminBudayaController extends Controller
                     'material' => $detail['material'] ?? ($fresh ? null : $content->alatMusik?->material),
                     'how_to_play' => $detail['how_to_play'] ?? ($fresh ? null : $content->alatMusik?->how_to_play),
                     'function' => $detail['function'] ?? ($fresh ? null : $content->alatMusik?->function),
-                    'audio' => $detail['audio'] ?? ($fresh ? null : $content->alatMusik?->audio),
+                    'audio' => array_key_exists('audio', $detail)
+                        ? $detail['audio']
+                        : ($fresh ? null : $content->alatMusik?->audio),
                     'interactive_asset_id' => $detail['interactive_asset_id'] ?? ($fresh ? null : $content->alatMusik?->interactive_asset_id),
                 ]
             ),

@@ -114,7 +114,7 @@ class GaleriApiTest extends TestCase
         $this->assertFalse($titles->contains('Setuju 2'));
     }
 
-    public function test_store_forces_pending_and_validates(): void
+    public function test_store_publishes_immediately_and_validates(): void
     {
         $this->postJson('/api/galeri', ['title' => 'x', 'content_id' => $this->pub->id])->assertUnauthorized();
 
@@ -127,13 +127,13 @@ class GaleriApiTest extends TestCase
             'title' => 'Ref draft', 'content_id' => $this->draft->id,
         ])->assertUnprocessable()->assertJsonValidationErrors(['content_id']);
 
-        // Upaya memalsukan status approved diabaikan.
+        // Upaya memalsukan status rejected diabaikan: kiriman langsung approved.
         $r = $this->withToken($t)->postJson('/api/galeri', [
-            'title' => 'Baru', 'content_id' => $this->pub->id, 'status' => 'approved',
+            'title' => 'Baru', 'content_id' => $this->pub->id, 'status' => 'rejected',
             'caption' => 'cerita', 'location' => 'Pasar', 'activity_date' => '2026-10-01',
         ])->assertCreated();
-        $r->assertJsonPath('data.status', 'pending');
-        $this->assertDatabaseHas('galeri_posts', ['title' => 'Baru', 'status' => 'pending', 'user_id' => $this->u1->id]);
+        $r->assertJsonPath('data.status', 'approved');
+        $this->assertDatabaseHas('galeri_posts', ['title' => 'Baru', 'status' => 'approved', 'user_id' => $this->u1->id]);
     }
 
     public function test_store_upload_valid_and_rejects_invalid(): void
@@ -152,6 +152,11 @@ class GaleriApiTest extends TestCase
         $this->assertStringStartsWith('galeri/', $path);
         Storage::disk('public')->assertExists($path);
         $this->assertDatabaseHas('galeri_media', ['file_path' => $path, 'media_type' => 'image']);
+
+        // Kiriman yang baru diunggah langsung terlihat di galeri publik.
+        $this->getJson('/api/galeri')
+            ->assertOk()
+            ->assertJsonFragment(['title' => 'Dengan foto', 'status' => 'approved']);
 
         $this->withToken($t)->postJson('/api/galeri', [
             'title' => 'File jahat', 'content_id' => $this->pub->id,

@@ -73,6 +73,8 @@ Logout menghapus token aktif. `me` → `{ message, data: { user } }`
     (`configuration` aset **tidak** diekspos).
 - `GET /kategori/{kategori}` — `kategori ∈ tradisi,baju_adat,makanan,alat_musik`; lain → 404.
   Filter `daerah_id`/`q`/`per_page` sama seperti daftar.
+- `GET /jenis-tradisi?per_page=` — opsi `{id,nama}` untuk kategori tradisi.
+  Respons `{message,data,meta}` (default `per_page=50`), diurutkan berdasarkan `nama`.
 
 ## 8. Aksara & kuis (publik ambil soal, jawab & riwayat 🔒)
 
@@ -97,12 +99,15 @@ Logout menghapus token aktif. `me` → `{ message, data: { user } }`
 - `POST /galeri` 🔒 multipart — `title*`, `content_id*` (harus konten **published**),
   `caption/location/activity_date(date)` opsional, `media[]` opsional (maks 5,
   gambar `jpg,jpeg,png,webp` ≤2MB) disimpan via Storage `public/galeri/`.
-  Status dikunci `pending` (input `status` diabaikan). → 201.
+  Status dikunci `approved` (input `status` diabaikan): kiriman valid langsung
+  tampil di galeri publik, tanpa moderasi admin. → 201.
 - `POST /galeri/{id}/laporkan` 🔒 — `reason*` (≤255), `description` opsional.
   Duplikat user+kiriman → `409 {"message":"Anda sudah melaporkan kiriman ini."}`.
   Kiriman tak ada → 404.
 
-Aturan moderasi: kiriman baru `pending`, tak tampil publik sampai `approved`.
+Aturan visibilitas: kiriman baru langsung `approved` dan tampil publik; kiriman lama
+tetap sesuai statusnya. Moderasi admin (endpoint `/admin/galeri/*`) tetap tersedia
+untuk menangani kiriman lama yang `pending`/`rejected` serta laporan.
 
 ## 10. Admin (`auth:sanctum` + role `admin`, middleware `admin`)
 

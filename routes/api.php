@@ -1,21 +1,25 @@
 <?php
 
+use App\Http\Controllers\Api\AdminAksaraController;
 use App\Http\Controllers\Api\AdminBudayaController;
 use App\Http\Controllers\Api\AdminDaerahController;
 use App\Http\Controllers\Api\AdminGaleriController;
-use App\Http\Controllers\Api\AdminAksaraController;
+use App\Http\Controllers\Api\AdminMediaController;
 use App\Http\Controllers\Api\AdminQuizController;
-use App\Http\Controllers\Api\ChatbotController;
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AksaraController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatbotController;
 use App\Http\Controllers\Api\CulturalContentController;
 use App\Http\Controllers\Api\DaerahController;
 use App\Http\Controllers\Api\GaleriController;
+use App\Http\Controllers\Api\JenisTradisiController;
 use App\Http\Controllers\Api\QuizController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+Route::get('/jenis-tradisi', [JenisTradisiController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -54,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function (): void {
+    Route::post('/admin/media', [AdminMediaController::class, 'store'])
+        ->middleware('throttle:30,1');
+
     Route::get('/admin/galeri/pending', [AdminGaleriController::class, 'pending']);
     Route::patch('/admin/galeri/{id}/status', [AdminGaleriController::class, 'setStatus']);
 

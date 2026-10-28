@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
-
-import { Footer } from "@/components/layout/Footer";
-import { Navbar } from "@/components/layout/Navbar";
+import type { ReactNode } from "react";
 
 import "./globals.css";
 
@@ -28,19 +26,11 @@ export const metadata: Metadata = {
     "Galeri budaya Indonesia: jelajahi tradisi, pakaian adat, makanan daerah, alat musik tradisional, dan aksara daerah.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
       <body className={`${inter.variable} ${newsreader.variable} antialiased`}>
-        <a
-          href="#main"
-          className="focus-ring sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-md focus:border focus:border-line focus:bg-paper focus:px-4 focus:py-2 focus:text-[12px] focus:font-medium focus:text-ink"
-        >
-          Lewati ke konten
-        </a>
-        <Navbar />
         {children}
-        <Footer />
       </body>
     </html>
   );

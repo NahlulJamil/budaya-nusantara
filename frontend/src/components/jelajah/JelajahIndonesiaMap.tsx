@@ -75,7 +75,7 @@ export function JelajahIndonesiaMap() {
         {searchQuery && (
           <div className='mt-8'>
             <p className='text-[11.5px] text-muted mb-4'>
-              Hasil pencarian untuk '{searchQuery}'
+              Hasil pencarian untuk &apos;{searchQuery}&apos;
             </p>
             {searchResults.length > 0 ? (
               <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>

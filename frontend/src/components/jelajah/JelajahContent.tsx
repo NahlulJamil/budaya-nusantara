@@ -55,7 +55,7 @@ export function JelajahContent() {
           </h1>
           <p className='text-[14px] leading-[1.8] text-[#6b6b5a] sm:text-[15px]'>
             Pilih pulau, temukan provinsi, lalu kenali budaya yang membentuk identitasnya. 
-            Eksplorasi dan preview budaya terbuka tanpa login.
+            Eksplorasi dan preview budaya.
           </p>
         </div>
 
@@ -170,4 +170,5 @@ export function JelajahContent() {
       </section>
     </main>
   );
-}
+}
+

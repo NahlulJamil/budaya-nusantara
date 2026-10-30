@@ -9,6 +9,11 @@ export const ADMIN_NAV_ITEMS = [
     label: "Kelola Budaya",
     description: "Tradisi, pakaian adat, makanan, alat musik",
   },
+  {
+    href: "/admin/daerah",
+    label: "Kelola Provinsi",
+    description: "38 provinsi dan daerah budaya Indonesia",
+  },
 ] as const;
 
 function isActive(pathname: string, href: string) {

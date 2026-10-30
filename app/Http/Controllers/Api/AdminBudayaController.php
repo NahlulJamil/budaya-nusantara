@@ -7,6 +7,7 @@ use App\Models\AlatMusik;
 use App\Models\BajuAdat;
 use App\Models\BajuAdatVariant;
 use App\Models\CulturalContent;
+use App\Models\Daerah;
 use App\Models\Makanan;
 use App\Models\Tradisi;
 use App\Support\ManagedMedia;
@@ -25,6 +26,7 @@ class AdminBudayaController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', 'in:draft,published'],
             'daerah_id' => ['nullable', 'integer', 'exists:daerah,id'],
+            'provinsi' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -34,6 +36,11 @@ class AdminBudayaController extends Controller
             if (! empty($validated[$field])) {
                 $query->where($field, $validated[$field]);
             }
+        }
+
+        if (! empty($validated['provinsi'])) {
+            $provinsi = Daerah::provinsiVariants($validated['provinsi']);
+            $query->whereHas('daerah', fn ($q) => $q->whereIn('provinsi', $provinsi));
         }
 
         if (! empty($validated['q'])) {
@@ -49,7 +56,11 @@ class AdminBudayaController extends Controller
                 'category' => $c->category,
                 'title' => $c->title,
                 'status' => $c->status,
-                'daerah' => $c->daerah ? ['id' => $c->daerah->id, 'nama' => $c->daerah->nama] : null,
+                'daerah' => $c->daerah ? [
+                    'id' => $c->daerah->id,
+                    'nama' => $c->daerah->nama,
+                    'provinsi' => $c->daerah->provinsi,
+                ] : null,
             ])->values(),
             'meta' => $this->meta($paginator),
         ]);
@@ -65,7 +76,10 @@ class AdminBudayaController extends Controller
 
         $content = DB::transaction(function () use ($validated, $request): CulturalContent {
             $content = CulturalContent::create([
-                'daerah_id' => $validated['daerah_id'],
+                'daerah_id' => $this->resolveDaerahId(
+                    $validated['daerah_id'] ?? null,
+                    $validated['provinsi'] ?? null,
+                ),
                 'category' => $validated['category'],
                 'title' => $validated['title'],
                 'description' => $validated['description'],
@@ -108,7 +122,11 @@ class AdminBudayaController extends Controller
                 'meaning' => $content->meaning,
                 'main_image' => $content->main_image,
                 'status' => $content->status,
-                'daerah' => $content->daerah ? ['id' => $content->daerah->id, 'nama' => $content->daerah->nama] : null,
+                'daerah' => $content->daerah ? [
+                    'id' => $content->daerah->id,
+                    'nama' => $content->daerah->nama,
+                    'provinsi' => $content->daerah->provinsi,
+                ] : null,
                 'creator' => $content->creator ? ['id' => $content->creator->id, 'username' => $content->creator->username] : null,
                 'detail' => $this->detailFor($content),
                 'sources' => $content->contentSources->map(fn ($s): array => [
@@ -142,7 +160,17 @@ class AdminBudayaController extends Controller
         }
 
         DB::transaction(function () use ($content, $validated, $newCategory, $categoryChanged): void {
-            $content->fill(collect($validated)->except(['detail', 'category'])->toArray());
+            $fillable = collect($validated)->except(['detail', 'category', 'provinsi'])->toArray();
+
+            if (array_key_exists('provinsi', $validated)) {
+                $fillable['daerah_id'] = $this->resolveDaerahId(
+                    $validated['daerah_id'] ?? null,
+                    $validated['provinsi'],
+                    $content,
+                );
+            }
+
+            $content->fill($fillable);
 
             if ($categoryChanged) {
                 $this->deleteDetails($content);
@@ -188,7 +216,12 @@ class AdminBudayaController extends Controller
         $sometimes = $partial ? ['sometimes'] : ['required'];
 
         return [
-            'daerah_id' => [...$sometimes, 'integer', 'exists:daerah,id'],
+            'daerah_id' => $partial
+                ? ['sometimes', 'nullable', 'integer', 'exists:daerah,id']
+                : ['required_without:provinsi', 'nullable', 'integer', 'exists:daerah,id'],
+            'provinsi' => $partial
+                ? ['sometimes', 'string', 'max:100']
+                : ['required_without:daerah_id', 'string', 'max:100'],
             'category' => [...$sometimes, 'string', 'in:'.implode(',', self::CATEGORIES)],
             'title' => [...$sometimes, 'string', 'max:255'],
             'description' => [...$sometimes, 'string'],
@@ -330,6 +363,43 @@ class AdminBudayaController extends Controller
         BajuAdat::where('content_id', $content->id)->delete();
         Makanan::where('content_id', $content->id)->delete();
         AlatMusik::where('content_id', $content->id)->delete();
+    }
+
+    /**
+     * Petakan pilihan provinsi ke daerah provinsi, tanpa mengganti daerah
+     * lama bila provinsinya masih sama.
+     */
+    private function resolveDaerahId(
+        ?int $daerahId,
+        ?string $provinsi,
+        ?CulturalContent $content = null,
+    ): ?int {
+        if ($daerahId !== null) {
+            return $daerahId;
+        }
+
+        $provinsi = trim((string) $provinsi);
+
+        if ($provinsi === '') {
+            return $content?->daerah_id;
+        }
+
+        if (
+            $content?->daerah?->provinsi
+            && in_array($content->daerah->provinsi, Daerah::provinsiVariants($provinsi), true)
+        ) {
+            return $content->daerah_id;
+        }
+
+        $daerah = Daerah::query()
+            ->where('nama', $provinsi)
+            ->whereIn('provinsi', Daerah::provinsiVariants($provinsi))
+            ->first();
+
+        return ($daerah ?? Daerah::create([
+            'nama' => $provinsi,
+            'provinsi' => $provinsi,
+        ]))->id;
     }
 
     private function detailFor(CulturalContent $content): ?array

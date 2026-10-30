@@ -24,11 +24,16 @@ class GeminiChatService
         }
         $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
 
-        return $this->complete($systemInstruction, $contents, 1024, 0.7);
+        return $this->complete($systemInstruction, $contents, 2048, 0.7, 'low');
     }
 
-    public function complete(string $systemInstruction, array $contents, int $maxTokens, float $temperature): string
-    {
+    public function complete(
+        string $systemInstruction,
+        array $contents,
+        int $maxTokens,
+        float $temperature,
+        ?string $thinkingLevel = null
+    ): string {
         $config = config('services.gemini');
         $key = $config['key'] ?? null;
 
@@ -36,17 +41,26 @@ class GeminiChatService
             throw new GeminiNotConfiguredException('Layanan AI belum dikonfigurasi. Administrator perlu mengisi GEMINI_API_KEY.');
         }
 
-        $model = $config['model'] ?? 'gemini-2.0-flash';
+        $model = $config['model'] ?? 'gemini-3.5-flash';
         $timeout = (int) ($config['timeout'] ?? 30);
+
+        $generationConfig = [
+            'maxOutputTokens' => $maxTokens,
+            'temperature' => $temperature,
+        ];
+
+        if ($thinkingLevel !== null) {
+            $generationConfig['thinkingConfig'] = ['thinkingLevel' => $thinkingLevel];
+        }
 
         try {
             $response = Http::timeout($timeout)
                 ->acceptJson()
+                ->withQueryParameters(['key' => $key])
                 ->post(self::ENDPOINT."/{$model}:generateContent", [
-                    'key' => $key,
                     'system_instruction' => ['parts' => [['text' => $systemInstruction]]],
                     'contents' => $contents,
-                    'generationConfig' => ['maxOutputTokens' => $maxTokens, 'temperature' => $temperature],
+                    'generationConfig' => $generationConfig,
                 ]);
         } catch (ConnectionException $e) {
             throw new GeminiUnavailableException('Layanan AI tidak dapat dihubungi. Coba lagi nanti.');

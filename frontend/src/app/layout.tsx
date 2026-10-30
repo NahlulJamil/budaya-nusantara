@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { FloatingChatbot } from "@/components/chatbot/FloatingChatbot";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="id">
       <body className={`${inter.variable} ${newsreader.variable} antialiased`}>
         {children}
+        <FloatingChatbot />
       </body>
     </html>
   );

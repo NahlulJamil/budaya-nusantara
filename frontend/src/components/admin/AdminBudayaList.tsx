@@ -25,19 +25,18 @@ import {
   AdminApiError,
   deleteAdminBudaya,
   fetchAdminBudayaList,
-  fetchAdminDaerahOptions,
   updateAdminBudayaStatus,
   type AdminBudayaListItem,
   type AdminContentStatus,
-  type AdminDaerahListItem,
 } from "@/lib/adminApi";
+import { PROVINCE_GROUPS } from "@/data/indonesiaProvinces";
 import { CATEGORY_LABELS } from "@/lib/api";
 import type { PaginationMeta } from "@/lib/types";
 
 interface BudayaQuery {
   q: string;
   status: "" | AdminContentStatus;
-  daerahId: "" | number;
+  provinsi: string;
   perPage: number;
   page: number;
 }
@@ -51,7 +50,7 @@ const PER_PAGE_OPTIONS = [10, 20, 50];
 const INITIAL_QUERY: BudayaQuery = {
   q: "",
   status: "",
-  daerahId: "",
+  provinsi: "",
   perPage: 10,
   page: 1,
 };
@@ -166,10 +165,6 @@ export function AdminBudayaList() {
   const [listError, setListError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [daerahOptions, setDaerahOptions] = useState<AdminDaerahListItem[]>([]);
-  const [daerahLoading, setDaerahLoading] = useState(true);
-  const [daerahError, setDaerahError] = useState<string | null>(null);
-
   const [notice, setNotice] = useState<Notice | null>(null);
   const [deleteTarget, setDeleteTarget] =
     useState<AdminBudayaListItem | null>(null);
@@ -210,7 +205,7 @@ export function AdminBudayaList() {
           {
             q: query.q,
             status: query.status,
-            daerah_id: query.daerahId,
+            provinsi: query.provinsi,
             per_page: query.perPage,
             page: query.page,
           },
@@ -269,58 +264,6 @@ export function AdminBudayaList() {
     };
   }, [query, reloadKey, expireSession]);
 
-  // Opsi daerah untuk filter.
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-
-    async function load() {
-      await Promise.resolve();
-
-      if (!active) {
-        return;
-      }
-
-      setDaerahLoading(true);
-
-      try {
-        const response = await fetchAdminDaerahOptions(50, controller.signal);
-
-        if (!active) {
-          return;
-        }
-
-        setDaerahOptions(response.data);
-        setDaerahError(null);
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        if (
-          error instanceof AdminApiError &&
-          (error.status === 401 || error.status === 403)
-        ) {
-          expireSession(error.status === 403 ? "forbidden" : undefined);
-          return;
-        }
-
-        setDaerahError("Gagal memuat daftar daerah.");
-      } finally {
-        if (active) {
-          setDaerahLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [expireSession]);
-
   // Notifikasi sukses menutup sendiri.
   useEffect(() => {
     if (!notice || notice.tone !== "success") {
@@ -337,13 +280,8 @@ export function AdminBudayaList() {
     setQuery((current) => ({ ...current, status, page: 1 }));
   }, []);
 
-  const handleDaerahFilter = useCallback((value: string) => {
-    const daerahId = value ? Number(value) : "";
-    setQuery((current) => ({
-      ...current,
-      daerahId: Number.isNaN(daerahId) ? "" : daerahId,
-      page: 1,
-    }));
+  const handleProvinceFilter = useCallback((value: string) => {
+    setQuery((current) => ({ ...current, provinsi: value, page: 1 }));
   }, []);
 
   const handlePerPage = useCallback((value: string) => {
@@ -460,7 +398,7 @@ export function AdminBudayaList() {
   const totalPages = Math.max(1, meta?.last_page ?? 1);
   const currentPage = meta?.current_page ?? query.page;
   const activeFilters =
-    query.q !== "" || query.status !== "" || query.daerahId !== "";
+    query.q !== "" || query.status !== "" || query.provinsi !== "";
   const firstItem =
     totalItems === 0
       ? 0
@@ -472,12 +410,6 @@ export function AdminBudayaList() {
           currentPage * (meta?.per_page ?? query.perPage),
           totalItems,
         );
-  const selectedDaerahName =
-    query.daerahId === ""
-      ? ""
-      : (daerahOptions.find((daerah) => daerah.id === query.daerahId)?.nama ??
-        `#${query.daerahId}`);
-
   return (
     <section className="mt-8">
       <div className="rounded-xl border border-line bg-paper p-4 sm:p-5">
@@ -516,28 +448,24 @@ export function AdminBudayaList() {
               </select>
             </div>
             <div>
-              <label htmlFor="budaya-daerah" className="eyebrow">
-                Daerah
+              <label htmlFor="budaya-provinsi" className="eyebrow">
+                Provinsi
               </label>
               <select
-                id="budaya-daerah"
-                value={query.daerahId === "" ? "" : String(query.daerahId)}
-                onChange={(event) => handleDaerahFilter(event.target.value)}
-                disabled={daerahLoading}
+                id="budaya-provinsi"
+                value={query.provinsi}
+                onChange={(event) => handleProvinceFilter(event.target.value)}
                 className={CONTROL_CLASS}
               >
-                <option value="">
-                  {daerahLoading ? "Memuat daerah..." : "Semua daerah"}
-                </option>
-                {daerahError ? (
-                  <option value="" disabled>
-                    {daerahError}
-                  </option>
-                ) : null}
-                {daerahOptions.map((daerah) => (
-                  <option key={daerah.id} value={daerah.id}>
-                    {daerah.nama}
-                  </option>
+                <option value="">Semua provinsi</option>
+                {PROVINCE_GROUPS.map((group) => (
+                  <optgroup key={group.id} label={group.name}>
+                    {group.provinces.map((province) => (
+                      <option key={province.name} value={province.name}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
@@ -574,9 +502,9 @@ export function AdminBudayaList() {
                 Status: {STATUS_LABELS[query.status]}
               </span>
             ) : null}
-            {query.daerahId ? (
+            {query.provinsi ? (
               <span className="inline-flex items-center rounded-full border border-line bg-cream px-2.5 py-1 text-[11px] text-ink">
-                Daerah: {selectedDaerahName}
+                Provinsi: {query.provinsi}
               </span>
             ) : null}
             <button
@@ -692,7 +620,7 @@ export function AdminBudayaList() {
                       Kategori
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium">
-                      Daerah
+                      Provinsi
                     </th>
                     <th scope="col" className="px-4 py-3 font-medium">
                       Status
@@ -723,7 +651,7 @@ export function AdminBudayaList() {
                           {CATEGORY_LABELS[item.category] ?? item.category}
                         </td>
                         <td className="px-4 py-3 text-[12.5px] text-muted">
-                          {item.daerah?.nama ?? "—"}
+                          {item.daerah?.provinsi ?? item.daerah?.nama ?? "—"}
                         </td>
                         <td className="px-4 py-3">
                           <AdminStatusBadge status={item.status} />
@@ -765,9 +693,9 @@ export function AdminBudayaList() {
                       <AdminStatusBadge status={item.status} />
                     </div>
                     <p className="mt-3 text-[12px] text-muted">
-                      Daerah:{" "}
+                      Provinsi:{" "}
                       <span className="text-ink">
-                        {item.daerah?.nama ?? "—"}
+                        {item.daerah?.provinsi ?? item.daerah?.nama ?? "—"}
                       </span>
                     </p>
                     <div className="mt-3 border-t border-line pt-3">

@@ -15,7 +15,7 @@ export interface AdminBudayaListItem {
   category: CulturalCategory;
   title: string;
   status: AdminContentStatus;
-  daerah: { id: number; nama: string } | null;
+  daerah: { id: number; nama: string; provinsi: string | null } | null;
 }
 
 export interface AdminDaerahListItem {
@@ -26,10 +26,50 @@ export interface AdminDaerahListItem {
   aksaras_count: number;
 }
 
+export interface AdminDaerahListQuery {
+  q?: string;
+  per_page?: number;
+  page?: number;
+}
+
+export interface AdminDaerahCreatePayload {
+  nama: string;
+  provinsi: string;
+  deskripsi?: string;
+}
+
+export interface AdminDaerahUpdatePayload {
+  nama: string;
+  provinsi: string;
+  deskripsi?: string | null;
+}
+
+export interface AdminDaerahDetail {
+  id: number;
+  nama: string;
+  provinsi: string | null;
+  deskripsi: string | null;
+  cultural_contents_count: number;
+  aksaras_count: number;
+}
+
+export interface AdminDaerahDetailResponse {
+  message: string;
+  data: AdminDaerahDetail;
+}
+
+export interface AdminDaerahMutationResponse {
+  message: string;
+  data: {
+    id: number;
+    nama: string;
+  };
+}
+
 export interface AdminBudayaListQuery {
   q?: string;
   status?: AdminContentStatus | "";
-  daerah_id?: number | "";
+  provinsi?: string;
   per_page?: number;
   page?: number;
 }
@@ -96,7 +136,7 @@ export interface AdminBudayaDetailPayload {
 
 /** Payload `POST /api/admin/budaya` sesuai aturan validasi backend. */
 export interface AdminBudayaCreatePayload {
-  daerah_id: number;
+  provinsi: string;
   category: CulturalCategory;
   title: string;
   description: string;
@@ -141,7 +181,7 @@ export interface AdminBudayaContentDetail {
   meaning: string | null;
   main_image: string | null;
   status: AdminContentStatus;
-  daerah: { id: number; nama: string } | null;
+  daerah: { id: number; nama: string; provinsi: string | null } | null;
   creator: { id: number; username: string } | null;
   detail: AdminBudayaDetailData | null;
   sources: { id: number; title: string; source_url: string | null }[];
@@ -164,7 +204,7 @@ export interface AdminMediaUploadResponse {
  * `main_image: null` dipakai untuk mengosongkan gambar.
  */
 export interface AdminBudayaUpdatePayload {
-  daerah_id: number;
+  provinsi: string;
   category: CulturalCategory;
   title: string;
   description: string;
@@ -427,8 +467,8 @@ export async function fetchAdminBudayaList(
     params.set("status", query.status);
   }
 
-  if (query.daerah_id) {
-    params.set("daerah_id", String(query.daerah_id));
+  if (query.provinsi) {
+    params.set("provinsi", query.provinsi);
   }
 
   if (query.per_page) {
@@ -447,16 +487,84 @@ export async function fetchAdminBudayaList(
   );
 }
 
+export async function fetchAdminDaerahList(
+  query: AdminDaerahListQuery = {},
+  signal?: AbortSignal,
+): Promise<AdminDaerahListResponse> {
+  const params = new URLSearchParams();
+  const keyword = query.q?.trim();
+
+  if (keyword) {
+    params.set("q", keyword);
+  }
+
+  if (query.per_page) {
+    params.set("per_page", String(query.per_page));
+  }
+
+  if (query.page && query.page > 1) {
+    params.set("page", String(query.page));
+  }
+
+  const search = params.toString();
+
+  return adminRequest<AdminDaerahListResponse>(
+    `/admin/daerah${search ? `?${search}` : ""}`,
+    { token: requireAdminToken(), signal },
+  );
+}
+
 export async function fetchAdminDaerahOptions(
   perPage = 50,
   signal?: AbortSignal,
 ): Promise<AdminDaerahListResponse> {
-  const params = new URLSearchParams({ per_page: String(perPage) });
+  return fetchAdminDaerahList({ per_page: perPage }, signal);
+}
 
-  return adminRequest<AdminDaerahListResponse>(
-    `/admin/daerah?${params.toString()}`,
-    { token: requireAdminToken(), signal },
-  );
+export async function fetchAdminDaerahDetail(
+  id: number,
+  signal?: AbortSignal,
+): Promise<AdminDaerahDetailResponse> {
+  return adminRequest<AdminDaerahDetailResponse>(`/admin/daerah/${id}`, {
+    token: requireAdminToken(),
+    signal,
+  });
+}
+
+export async function createAdminDaerah(
+  payload: AdminDaerahCreatePayload,
+  signal?: AbortSignal,
+): Promise<AdminDaerahMutationResponse> {
+  return adminRequest<AdminDaerahMutationResponse>("/admin/daerah", {
+    method: "POST",
+    token: requireAdminToken(),
+    body: payload,
+    signal,
+  });
+}
+
+export async function updateAdminDaerah(
+  id: number,
+  payload: AdminDaerahUpdatePayload,
+  signal?: AbortSignal,
+): Promise<AdminDaerahMutationResponse> {
+  return adminRequest<AdminDaerahMutationResponse>(`/admin/daerah/${id}`, {
+    method: "PUT",
+    token: requireAdminToken(),
+    body: payload,
+    signal,
+  });
+}
+
+export async function deleteAdminDaerah(
+  id: number,
+  signal?: AbortSignal,
+): Promise<AdminMessageResponse> {
+  return adminRequest<AdminMessageResponse>(`/admin/daerah/${id}`, {
+    method: "DELETE",
+    token: requireAdminToken(),
+    signal,
+  });
 }
 
 export async function updateAdminBudayaStatus(

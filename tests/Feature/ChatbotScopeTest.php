@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\ChatMessage;
-use App\Models\ChatSession;
 use App\Models\CulturalContent;
 use App\Models\Daerah;
 use App\Models\User;
@@ -183,6 +182,33 @@ class ChatbotScopeTest extends TestCase
         $this->withToken($this->token($u2))->getJson("/api/chatbot/sessions/{$sid}")->assertNotFound();
     }
 
+    public function test_gemini_requests_use_query_key_and_thinking_levels(): void
+    {
+        $requests = [];
+        Http::fake(function ($request) use (&$requests) {
+            $requests[] = $request;
+            $sys = json_encode($request->data()['system_instruction'] ?? []);
+            $text = str_contains($sys, 'KLASIFIKASI_CAKUPAN') ? 'in_scope' : 'Jawaban budaya.';
+
+            return Http::response(['candidates' => [['content' => ['parts' => [['text' => $text]]]]]], 200);
+        });
+
+        $t = $this->token(User::factory()->create());
+        $this->withToken($t)->postJson('/api/chatbot/message', ['message' => 'Apa makna Tari Saman?'])
+            ->assertOk();
+
+        $this->assertCount(2, $requests);
+
+        foreach ($requests as $request) {
+            $this->assertStringContainsString('key=test-key', $request->url());
+            $this->assertArrayNotHasKey('key', $request->data());
+            $this->assertNotEmpty($request->data()['generationConfig']['thinkingConfig']['thinkingLevel'] ?? null);
+        }
+
+        $this->assertSame('minimal', $requests[0]->data()['generationConfig']['thinkingConfig']['thinkingLevel']);
+        $this->assertSame('low', $requests[1]->data()['generationConfig']['thinkingConfig']['thinkingLevel']);
+    }
+
     public function test_latency_cost_note_single_extra_call(): void
     {
         $calls = 0;
@@ -198,7 +224,7 @@ class ChatbotScopeTest extends TestCase
         $this->withToken($t)->postJson('/api/chatbot/message', ['message' => 'Apa makna Tari Saman?'])
             ->assertOk();
 
-        // Tepat 2 panggilan Gemini: 1 klasifikasi (ringan, 16 token) + 1 jawaban.
+        // Tepat 2 panggilan Gemini: 1 klasifikasi (ringan) + 1 jawaban.
         $this->assertSame(2, $calls);
     }
 }

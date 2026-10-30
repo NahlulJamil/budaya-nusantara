@@ -16,7 +16,6 @@ import {
 import {
   AdminApiError,
   createAdminBudaya,
-  fetchAdminDaerahOptions,
   fetchJenisTradisiOptions,
   updateAdminBudaya,
   uploadAdminMedia,
@@ -28,9 +27,9 @@ import {
   type AdminBudayaVariantGender,
   type AdminBudayaVariantPayload,
   type AdminContentStatus,
-  type AdminDaerahListItem,
   type AdminMediaPurpose,
 } from "@/lib/adminApi";
+import { PROVINCE_GROUPS, PROVINCE_NAMES } from "@/data/indonesiaProvinces";
 import { CATEGORY_LABELS, resolveMediaUrl } from "@/lib/api";
 import type { CulturalCategory } from "@/lib/types";
 
@@ -417,18 +416,13 @@ export function AdminBudayaForm({
   const router = useRouter();
   const { expireSession } = useAdminAuth();
 
-  const [daerahOptions, setDaerahOptions] = useState<AdminDaerahListItem[]>([]);
-  const [daerahLoading, setDaerahLoading] = useState(true);
-  const [daerahError, setDaerahError] = useState<string | null>(null);
-  const [daerahReloadKey, setDaerahReloadKey] = useState(0);
-
   const [jenisTradisiOptions, setJenisTradisiOptions] = useState<{ id: number; nama: string }[]>([]);
   const [jenisTradisiLoading, setJenisTradisiLoading] = useState(true);
   const [jenisTradisiError, setJenisTradisiError] = useState<string | null>(null);
   const [jenisTradisiReloadKey, setJenisTradisiReloadKey] = useState(0);
 
-  const [daerahId, setDaerahId] = useState<"" | number>(
-    content?.daerah?.id ?? "",
+  const [provinsi, setProvinsi] = useState(
+    content?.daerah?.provinsi ?? "",
   );
   const [category, setCategory] = useState<"" | CulturalCategory>(
     content?.category ?? "",
@@ -464,62 +458,6 @@ export function AdminBudayaForm({
   const resetCreateOnHideRef = useRef(false);
 
   const [imagePreviewFailed, setImagePreviewFailed] = useState(false);
-
-  // Muat pilihan daerah dari endpoint admin yang sudah tersedia.
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-
-    async function load() {
-      await Promise.resolve();
-
-      if (!active) {
-        return;
-      }
-
-      setDaerahLoading(true);
-
-      try {
-        const response = await fetchAdminDaerahOptions(50, controller.signal);
-
-        if (!active) {
-          return;
-        }
-
-        setDaerahOptions(response.data);
-        setDaerahError(null);
-      } catch (error) {
-        if (!active) {
-          return;
-        }
-
-        if (
-          error instanceof AdminApiError &&
-          (error.status === 401 || error.status === 403)
-        ) {
-          expireSession(error.status === 403 ? "forbidden" : undefined);
-          return;
-        }
-
-        setDaerahError(
-          error instanceof AdminApiError
-            ? error.message
-            : "Gagal memuat daftar daerah.",
-        );
-      } finally {
-        if (active) {
-          setDaerahLoading(false);
-        }
-      }
-    }
-
-    void load();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [expireSession, daerahReloadKey]);
 
   // Muat pilihan jenis tradisi dari API.
   useEffect(() => {
@@ -606,7 +544,7 @@ export function AdminBudayaForm({
 
       resetCreateOnHideRef.current = false;
       revokeObjectUrls(urls);
-      setDaerahId("");
+      setProvinsi("");
       setCategory("");
       setTitle("");
       setDescription("");
@@ -878,8 +816,8 @@ export function AdminBudayaForm({
   function validate(): Record<string, string> {
     const errors: Record<string, string> = {};
 
-    if (daerahId === "") {
-      errors.daerah_id = "Pilih daerah.";
+    if (!provinsi.trim()) {
+      errors.provinsi = "Pilih provinsi.";
     }
 
     if (category === "") {
@@ -945,7 +883,7 @@ export function AdminBudayaForm({
   ): AdminBudayaCreatePayload | AdminBudayaUpdatePayload {
     const activeCategory = category as CulturalCategory;
     const base = {
-      daerah_id: Number(daerahId),
+      provinsi: provinsi.trim(),
       category: activeCategory,
       title: title.trim(),
       description: description.trim(),
@@ -1167,49 +1105,38 @@ export function AdminBudayaForm({
       >
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field
-            id="budaya-daerah"
-            label="Daerah"
+            id="budaya-provinsi"
+            label="Provinsi"
             required
-            error={fieldError("daerah_id")}
+            error={fieldError("provinsi")}
           >
             <select
-              id="budaya-daerah"
-              value={daerahId === "" ? "" : String(daerahId)}
+              id="budaya-provinsi"
+              value={provinsi}
               onChange={(event) => {
-                setDaerahId(
-                  event.target.value === "" ? "" : Number(event.target.value),
-                );
-                clearFieldError("daerah_id");
+                setProvinsi(event.target.value);
+                clearFieldError("provinsi");
               }}
-              disabled={daerahLoading || Boolean(daerahError)}
-              aria-invalid={Boolean(fieldError("daerah_id"))}
+              aria-invalid={Boolean(fieldError("provinsi"))}
               aria-describedby={
-                fieldError("daerah_id") ? "budaya-daerah-error" : undefined
+                fieldError("provinsi") ? "budaya-provinsi-error" : undefined
               }
-              className={inputClass(fieldError("daerah_id"))}
+              className={inputClass(fieldError("provinsi"))}
             >
-              <option value="">
-                {daerahLoading ? "Memuat daerah..." : "Pilih daerah"}
-              </option>
-              {daerahOptions.map((daerah) => (
-                <option key={daerah.id} value={daerah.id}>
-                  {daerah.nama}
-                </option>
+              <option value="">Pilih provinsi</option>
+              {provinsi !== "" && !PROVINCE_NAMES.includes(provinsi) ? (
+                <option value={provinsi}>{provinsi} (data lama)</option>
+              ) : null}
+              {PROVINCE_GROUPS.map((group) => (
+                <optgroup key={group.id} label={group.name}>
+                  {group.provinces.map((province) => (
+                    <option key={province.name} value={province.name}>
+                      {province.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
-            {daerahError ? (
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11.5px] text-red-700">
-                <span>{daerahError}</span>
-                <button
-                  type="button"
-                  onClick={() => setDaerahReloadKey((key) => key + 1)}
-                  className="focus-ring inline-flex items-center gap-1 rounded-md border border-red-200 bg-paper px-2 py-0.5 font-medium text-red-700 transition-colors hover:bg-red-50"
-                >
-                  <RefreshIcon className="h-3 w-3" />
-                  Coba lagi
-                </button>
-              </div>
-            ) : null}
           </Field>
 
           <Field

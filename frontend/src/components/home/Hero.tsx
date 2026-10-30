@@ -6,7 +6,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative isolate h-[clamp(540px,78vh,840px)] w-full overflow-hidden bg-[#1b1c18]"
+      className="relative isolate h-[calc(100svh-72px)] min-h-[480px] w-full overflow-hidden bg-[#1b1c18]"
     >
       <AppImage
         src="/images/hero-pura.jpg"

@@ -28,7 +28,7 @@ export function NavbarInner() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-night text-[#f3efe4]">
+    <header className="relative z-50 bg-night text-[#f3efe4]">
       <div className="shell grid h-[72px] grid-cols-[1fr_auto] items-center lg:grid-cols-[1fr_auto_1fr]">
         <BrandLogo size="md" className="justify-self-start" />
 

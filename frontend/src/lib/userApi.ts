@@ -14,18 +14,36 @@ export function readUserToken(): string | null {
     return null;
   }
   try {
+    const persistent = window.localStorage.getItem(USER_TOKEN_KEY);
+    if (persistent) {
+      return persistent;
+    }
+  } catch {
+    // Lanjut ke sessionStorage bila localStorage tidak tersedia.
+  }
+  try {
     return window.sessionStorage.getItem(USER_TOKEN_KEY);
   } catch {
     return null;
   }
 }
 
-export function writeUserToken(token: string): boolean {
+/**
+ * Menyimpan token sesi. `remember` memakai localStorage agar sesi bertahan
+ * setelah tab ditutup; tanpa itu token hanya hidup selama tab aktif.
+ */
+export function writeUserToken(token: string, remember = false): boolean {
   if (typeof window === "undefined") {
     return false;
   }
   try {
-    window.sessionStorage.setItem(USER_TOKEN_KEY, token);
+    if (remember) {
+      window.localStorage.setItem(USER_TOKEN_KEY, token);
+      window.sessionStorage.removeItem(USER_TOKEN_KEY);
+    } else {
+      window.sessionStorage.setItem(USER_TOKEN_KEY, token);
+      window.localStorage.removeItem(USER_TOKEN_KEY);
+    }
     return true;
   } catch {
     return false;
@@ -35,6 +53,11 @@ export function writeUserToken(token: string): boolean {
 export function clearUserToken(): void {
   if (typeof window === "undefined") {
     return;
+  }
+  try {
+    window.localStorage.removeItem(USER_TOKEN_KEY);
+  } catch {
+    // Abaikan: tidak ada yang bisa dilakukan.
   }
   try {
     window.sessionStorage.removeItem(USER_TOKEN_KEY);

@@ -8,6 +8,7 @@ const MAX_PAGES = 20;
 export interface AksaraSummary {
   id: number;
   name: string;
+  description: string | null;
   main_image: string | null;
   daerah: DaerahSummary | null;
 }
@@ -191,6 +192,52 @@ export async function fetchAksaraList(): Promise<AksaraSummary[]> {
   } while (page <= lastPage && page <= MAX_PAGES);
 
   return items;
+}
+
+export interface AksaraListParams {
+  q?: string;
+  provinsi?: string;
+  daerahId?: number | null;
+  page?: number;
+  perPage?: number;
+}
+
+export interface AksaraListResult {
+  items: AksaraSummary[];
+  meta: PaginationMeta;
+}
+
+/** Ambil satu halaman daftar aksara dengan filter provinsi, daerah, dan pencarian. */
+export async function fetchAksaraPage(
+  params: AksaraListParams = {},
+): Promise<AksaraListResult> {
+  const query = new URLSearchParams();
+  const keyword = params.q?.trim();
+
+  if (keyword) {
+    query.set("q", keyword);
+  }
+
+  const provinsi = params.provinsi?.trim();
+  if (provinsi) {
+    query.set("provinsi", provinsi);
+  }
+
+  if (params.daerahId) {
+    query.set("daerah_id", String(params.daerahId));
+  }
+
+  query.set("per_page", String(params.perPage ?? 9));
+
+  if (params.page && params.page > 1) {
+    query.set("page", String(params.page));
+  }
+
+  const response = await request<AksaraListResponse>(
+    `/aksara?${query.toString()}`,
+  );
+
+  return { items: response.data ?? [], meta: response.meta };
 }
 
 export async function fetchAksaraDetail(id: number): Promise<AksaraDetail> {

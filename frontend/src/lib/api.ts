@@ -67,7 +67,7 @@ export function resolveMediaUrl(
   return `${API_ORIGIN}/storage/${value.replace(/^storage\//, "")}`;
 }
 
-function plainText(value: string | null | undefined): string | null {
+export function plainText(value: string | null | undefined): string | null {
   if (!value) {
     return null;
   }
@@ -139,6 +139,17 @@ export async function fetchHomeCultureCards(): Promise<HomeCultureCard[]> {
       href: `/budaya/${item.id}`,
     };
   });
+}
+
+/** Postingan galeri publik yang tertaut ke satu konten budaya. */
+export async function fetchGaleriByContent(
+  contentId: number,
+): Promise<GaleriPostSummary[]> {
+  const list = await apiGet<ApiListResponse<GaleriPostSummary>>(
+    `/galeri?content_id=${contentId}&per_page=12`,
+  );
+
+  return list.data ?? [];
 }
 
 export async function fetchHomeGallery(): Promise<HomeGalleryItem[]> {

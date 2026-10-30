@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Aksara;
 use App\Models\AksaraCategory;
+use App\Models\Daerah;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,9 @@ class AksaraController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
             'daerah_id' => ['nullable', 'integer', 'exists:daerah,id'],
+            'provinsi' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -22,6 +25,15 @@ class AksaraController extends Controller
 
         if (! empty($validated['daerah_id'])) {
             $query->where('daerah_id', $validated['daerah_id']);
+        }
+
+        if (! empty($validated['provinsi'])) {
+            $provinsi = Daerah::provinsiVariants($validated['provinsi']);
+            $query->whereHas('daerah', fn ($q) => $q->whereIn('provinsi', $provinsi));
+        }
+
+        if (! empty($validated['q'])) {
+            $query->where('name', 'like', "%{$validated['q']}%");
         }
 
         $paginator = $query->paginate($validated['per_page'] ?? 10);
@@ -86,6 +98,7 @@ class AksaraController extends Controller
         return [
             'id' => $aksara->id,
             'name' => $aksara->name,
+            'description' => $aksara->description,
             'main_image' => $aksara->main_image,
             'daerah' => $aksara->daerah ? [
                 'id' => $aksara->daerah->id,

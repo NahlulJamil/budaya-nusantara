@@ -96,6 +96,21 @@ export function getProvinceBySlug(slug: string): ProvinceData | undefined {
   return PROVINCE_DATA.find(p => p.slug === slug);
 }
 
+function normalizeProvinceName(value: string): string {
+  return value.trim().toLowerCase().replace(/sumatera/g, 'sumatra');
+}
+
+/** Cocokkan nama provinsi dari API (mis. "Sumatra Barat") dengan data statis. */
+export function getProvinceByName(name: string | null | undefined): ProvinceData | undefined {
+  if (!name) {
+    return undefined;
+  }
+
+  const target = normalizeProvinceName(name);
+
+  return PROVINCE_DATA.find(province => normalizeProvinceName(province.name) === target);
+}
+
 export function getTotalProvincesByGroup(islandGroup: IslandGroup): number {
   return getProvincesByIslandGroup(islandGroup).length;
 }

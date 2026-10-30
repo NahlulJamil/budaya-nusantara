@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Aksara;
 use App\Models\AlatMusik;
 use App\Models\BajuAdat;
 use App\Models\BajuAdatVariant;
@@ -213,5 +214,59 @@ class PublicApiTest extends TestCase
         $this->getJson('/api/kategori/ngawur')
             ->assertNotFound()
             ->assertJsonPath('message', 'Kategori tidak valid.');
+    }
+
+    public function test_budaya_index_supports_provinsi_filter_and_summary_description(): void
+    {
+        $padang = Daerah::create(['nama' => 'Padang', 'provinsi' => 'Sumatra Barat']);
+        CulturalContent::create([
+            'daerah_id' => $padang->id, 'category' => 'makanan', 'title' => 'Rendang Padang',
+            'description' => 'Masakan khas Minang.', 'history' => 'h', 'meaning' => 'm', 'status' => 'published',
+        ]);
+
+        // Ejaan "Sumatera" pada permintaan tetap cocok dengan data "Sumatra".
+        $this->getJson('/api/kategori/makanan?provinsi=Sumatera Barat')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Rendang Padang')
+            ->assertJsonPath('data.0.description', 'Masakan khas Minang.');
+
+        $this->getJson('/api/kategori/makanan?provinsi=Bali')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->getJson('/api/budaya?provinsi=Jawa Barat')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_aksara_index_supports_provinsi_and_search_filters(): void
+    {
+        $jateng = Daerah::create(['nama' => 'Surakarta', 'provinsi' => 'Jawa Tengah']);
+        $bali = Daerah::create(['nama' => 'Denpasar', 'provinsi' => 'Bali']);
+
+        Aksara::create([
+            'daerah_id' => $jateng->id, 'name' => 'Aksara Jawa',
+            'description' => 'Aksara tradisional Jawa.',
+        ]);
+        Aksara::create([
+            'daerah_id' => $bali->id, 'name' => 'Aksara Bali',
+            'description' => 'Aksara tradisional Bali.',
+        ]);
+
+        $this->getJson('/api/aksara?provinsi=Jawa Tengah')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Aksara Jawa')
+            ->assertJsonPath('data.0.description', 'Aksara tradisional Jawa.');
+
+        $this->getJson('/api/aksara?q=Bali')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Aksara Bali');
+
+        $this->getJson('/api/aksara?provinsi=Sumatera Barat')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 }

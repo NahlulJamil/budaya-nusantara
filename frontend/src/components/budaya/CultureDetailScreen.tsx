@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
+import { DressDetail } from "@/components/budaya/DressDetail";
+import { FoodDetail } from "@/components/budaya/FoodDetail";
+import { MusicDetail } from "@/components/budaya/MusicDetail";
+import { TraditionDetail } from "@/components/budaya/TraditionDetail";
 import { AppImage } from "@/components/ui/AppImage";
 import {
   AlertIcon,
@@ -278,12 +282,41 @@ export function CultureDetailScreen({ cultureId }: { cultureId: number }) {
   const history = clean(data?.history);
   const meaning = clean(data?.meaning);
   const image = resolveMediaUrl(data?.main_image);
-  const sources = (data?.sources ?? []).filter(
-    (source) => clean(source.title) || clean(source.source_url),
-  );
   const region = data?.daerah
     ? [data.daerah.nama, data.daerah.provinsi].filter(Boolean).join(" · ")
     : null;
+
+  if (!loading && data?.category === "tradisi") {
+    return (
+      <main id="main" className="bg-[#F8F6EF] pb-20">
+        <TraditionDetail data={data} />
+      </main>
+    );
+  }
+
+  if (!loading && data?.category === "makanan") {
+    return (
+      <main id="main" className="bg-[#F8F6EF] pb-20">
+        <FoodDetail data={data} />
+      </main>
+    );
+  }
+
+  if (!loading && data?.category === "baju_adat") {
+    return (
+      <main id="main" className="bg-[#F8F6EF] pb-20">
+        <DressDetail data={data} />
+      </main>
+    );
+  }
+
+  if (!loading && data?.category === "alat_musik") {
+    return (
+      <main id="main" className="bg-[#F8F6EF] pb-20">
+        <MusicDetail data={data} />
+      </main>
+    );
+  }
 
   return (
     <main id="main" className="pb-20">
@@ -416,48 +449,6 @@ export function CultureDetailScreen({ cultureId }: { cultureId: number }) {
             ) : null}
 
             <DetailSheet data={data} />
-
-            {sources.length > 0 ? (
-              <SectionCard title="Sumber">
-                <ul className="space-y-4">
-                  {sources.map((source) => {
-                    const title = clean(source.title);
-                    const author = clean(source.author);
-                    const note = clean(source.description);
-
-                    return (
-                      <li key={source.id}>
-                        {source.source_url ? (
-                          <a
-                            href={source.source_url}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="focus-ring inline-flex items-center gap-1.5 text-[13px] font-medium text-ink underline decoration-line underline-offset-4 transition-colors hover:decoration-ink"
-                          >
-                            {title ?? source.source_url}
-                            <ArrowUpRightIcon className="h-3 w-3" />
-                          </a>
-                        ) : (
-                          <p className="text-[13px] font-medium text-ink">
-                            {title ?? "Sumber"}
-                          </p>
-                        )}
-                        {author ? (
-                          <p className="mt-1 text-[11.5px] text-muted">
-                            {author}
-                          </p>
-                        ) : null}
-                        {note ? (
-                          <p className="mt-1 max-w-[680px] text-[12px] leading-[1.75] text-muted">
-                            {note}
-                          </p>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </SectionCard>
-            ) : null}
 
             <div className="mt-10">
               <Link

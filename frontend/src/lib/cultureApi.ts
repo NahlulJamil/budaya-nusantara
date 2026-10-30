@@ -61,13 +61,13 @@ export interface CultureListItem {
   id: number;
   category: CulturalCategory;
   title: string;
+  description: string | null;
   main_image: string | null;
   daerah: CultureDaerah | null;
   detail: CultureDetailPayload | null;
 }
 
 export interface CultureDetailItem extends CultureListItem {
-  description: string | null;
   history: string | null;
   meaning: string | null;
   sources: CultureSource[];
@@ -76,6 +76,8 @@ export interface CultureDetailItem extends CultureListItem {
 export interface CultureListParams {
   category?: CulturalCategory | null;
   q?: string;
+  provinsi?: string;
+  daerahId?: number | null;
   page?: number;
   perPage?: number;
 }
@@ -161,6 +163,15 @@ export async function fetchCultureList(
     query.set("q", keyword);
   }
 
+  const provinsi = params.provinsi?.trim();
+  if (provinsi) {
+    query.set("provinsi", provinsi);
+  }
+
+  if (params.daerahId) {
+    query.set("daerah_id", String(params.daerahId));
+  }
+
   query.set("per_page", String(params.perPage ?? 9));
 
   if (params.page && params.page > 1) {
@@ -188,4 +199,29 @@ export async function fetchCultureDetail(
   }>(`/budaya/${id}`);
 
   return response.data;
+}
+
+function normalizeProvince(value: string): string {
+  return value.trim().toLowerCase().replace(/sumatera/g, "sumatra");
+}
+
+/**
+ * Daftar daerah (kabupaten/kota) milik satu provinsi untuk filter halaman kategori.
+ * Endpoint daerah hanya mendukung pencarian teks, jadi hasilnya disaring persis
+ * berdasarkan nama provinsi.
+ */
+export async function fetchDaerahByProvince(
+  provinsi: string,
+): Promise<CultureDaerah[]> {
+  const query = new URLSearchParams({ q: provinsi, per_page: "50" });
+  const response = await request<{ message: string; data: CultureDaerah[] }>(
+    `/daerah?${query.toString()}`,
+  );
+  const target = normalizeProvince(provinsi);
+
+  return (response.data ?? []).filter(
+    (daerah) =>
+      typeof daerah.provinsi === "string" &&
+      normalizeProvince(daerah.provinsi) === target,
+  );
 }

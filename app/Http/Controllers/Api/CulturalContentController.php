@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CulturalContent;
+use App\Models\Daerah;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,6 +67,7 @@ class CulturalContentController extends Controller
         return [
             'q' => ['nullable', 'string', 'max:100'],
             'daerah_id' => ['nullable', 'integer', 'exists:daerah,id'],
+            'provinsi' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
     }
@@ -87,6 +89,11 @@ class CulturalContentController extends Controller
             $query->where('daerah_id', $validated['daerah_id']);
         }
 
+        if (! empty($validated['provinsi'])) {
+            $provinsi = Daerah::provinsiVariants($validated['provinsi']);
+            $query->whereHas('daerah', fn ($q) => $q->whereIn('provinsi', $provinsi));
+        }
+
         if (! empty($validated['q'])) {
             $query->where('title', 'like', "%{$validated['q']}%");
         }
@@ -100,6 +107,7 @@ class CulturalContentController extends Controller
             'id' => $content->id,
             'category' => $content->category,
             'title' => $content->title,
+            'description' => $content->description,
             'main_image' => $content->main_image,
             'daerah' => $content->daerah ? [
                 'id' => $content->daerah->id,

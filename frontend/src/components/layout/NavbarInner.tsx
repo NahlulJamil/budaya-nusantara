@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { NAV_LINKS } from "@/components/layout/nav-links";
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
 
@@ -29,13 +30,7 @@ export function NavbarInner() {
   return (
     <header className="sticky top-0 z-50 bg-night text-[#f3efe4]">
       <div className="shell grid h-[72px] grid-cols-[1fr_auto] items-center lg:grid-cols-[1fr_auto_1fr]">
-        <Link
-          href="/"
-          className="focus-ring justify-self-start text-[19px] font-normal tracking-[0.02em] text-[#f6f2e7]"
-          aria-label="GaleriBudaya — Beranda"
-        >
-          Galeri<span className="text-amber">Budaya</span>
-        </Link>
+        <BrandLogo size="md" className="justify-self-start" />
 
         <nav
           aria-label="Navigasi utama"

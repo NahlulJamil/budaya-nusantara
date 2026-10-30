@@ -57,6 +57,7 @@ export interface GaleriPostSummary {
   location: string | null;
   activity_date: string | null;
   status: "pending" | "approved" | "rejected";
+  created_at?: string | null;
   author: { id: number; username: string } | null;
   content: { id: number; title: string; category: CulturalCategory } | null;
   media: GaleriMedia[];

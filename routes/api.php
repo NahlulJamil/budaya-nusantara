@@ -24,6 +24,7 @@ Route::get('/jenis-tradisi', [JenisTradisiController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::patch('/me', [AuthController::class, 'updateProfile']);
 });
 
 Route::get('/daerah', [DaerahController::class, 'index']);

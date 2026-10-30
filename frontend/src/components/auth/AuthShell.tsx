@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { AppImage } from "@/components/ui/AppImage";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 
@@ -37,16 +37,7 @@ function AuthBackButton() {
 }
 
 function BrandWordmark() {
-  return (
-    <Link
-      href="/"
-      className="focus-ring inline-flex text-[26px] leading-none font-medium tracking-[0.01em] sm:text-[30px]"
-      aria-label="GaleriBudaya — Beranda"
-    >
-      <span className="text-[#f8f4e9]">Galeri</span>
-      <span className="text-amber">Budaya</span>
-    </Link>
-  );
+  return <BrandLogo size="lg" />;
 }
 
 function BrandPanel() {

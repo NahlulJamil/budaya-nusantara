@@ -98,6 +98,104 @@ class AuthApiTest extends TestCase
         $this->getJson('/api/me')->assertUnauthorized();
     }
 
+    public function test_register_and_me_include_created_at(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'username' => 'bergabung',
+            'email' => 'bergabung@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertCreated();
+        $this->assertIsString($response->json('data.user.created_at'));
+
+        $this->withToken($response->json('data.token'))->getJson('/api/me')
+            ->assertOk()
+            ->assertJsonPath('data.user.created_at', $response->json('data.user.created_at'));
+    }
+
+    public function test_update_profile_changes_username(): void
+    {
+        $user = User::factory()->create(['username' => 'nama-lama']);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->withToken($token)->patchJson('/api/me', ['username' => 'nama-baru'])
+            ->assertOk()
+            ->assertJsonPath('data.user.username', 'nama-baru')
+            ->assertJsonPath('data.user.email', $user->email)
+            ->assertJsonMissingPath('data.user.password');
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'username' => 'nama-baru']);
+    }
+
+    public function test_update_profile_allows_keeping_same_username(): void
+    {
+        $user = User::factory()->create(['username' => 'tetap']);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->withToken($token)->patchJson('/api/me', ['username' => 'tetap'])
+            ->assertOk()
+            ->assertJsonPath('data.user.username', 'tetap');
+    }
+
+    public function test_update_profile_rejects_duplicate_username(): void
+    {
+        User::factory()->create(['username' => 'sudah-dipakai']);
+        $user = User::factory()->create(['username' => 'pemilik']);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->withToken($token)->patchJson('/api/me', ['username' => 'sudah-dipakai'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['username']);
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'username' => 'pemilik']);
+    }
+
+    public function test_update_profile_validates_username(): void
+    {
+        $user = User::factory()->create(['username' => 'validasi']);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->withToken($token)->patchJson('/api/me', ['username' => ''])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['username']);
+
+        $this->withToken($token)->patchJson('/api/me', ['username' => str_repeat('a', 256)])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['username']);
+    }
+
+    public function test_update_profile_ignores_email_and_role_changes(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'aman',
+            'email' => 'aman@example.com',
+        ]);
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        $this->withToken($token)->patchJson('/api/me', [
+            'username' => 'aman-baru',
+            'email' => 'pindah@example.com',
+            'role' => 'admin',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.user.email', 'aman@example.com')
+            ->assertJsonPath('data.user.role', 'user');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'username' => 'aman-baru',
+            'email' => 'aman@example.com',
+            'role' => 'user',
+        ]);
+    }
+
+    public function test_update_profile_requires_token(): void
+    {
+        $this->patchJson('/api/me', ['username' => 'tanpa-token'])->assertUnauthorized();
+    }
+
     public function test_logout_revokes_current_token(): void
     {
         $user = User::factory()->create();

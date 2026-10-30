@@ -10,19 +10,14 @@ import {
   AdminSidebarNav,
   AdminSidebarNavFallback,
 } from "@/components/admin/AdminSidebarNav";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { ArrowUpRightIcon, CloseIcon, MenuIcon } from "@/components/ui/icons";
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-6 pt-7 pb-5">
-        <Link
-          href="/"
-          onClick={onNavigate}
-          className="focus-ring text-[19px] tracking-[0.02em] text-[#f6f2e7]"
-        >
-          Galeri<span className="text-amber">Budaya</span>
-        </Link>
+        <BrandLogo size="md" onClick={onNavigate} />
         <p className="mt-2 text-[9.5px] font-medium tracking-[0.18em] text-[#8d8779] uppercase">
           Panel Admin
         </p>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import { AdminLoadingScreen } from "@/components/admin/AdminLoadingScreen";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { AdminApiError } from "@/lib/adminApi";
 
 interface FieldErrors {
@@ -103,9 +104,7 @@ export function AdminLoginScreen() {
           />
 
           <div className="relative">
-            <p className="text-[19px] tracking-[0.02em] text-[#f6f2e7]">
-              Galeri<span className="text-amber">Budaya</span>
-            </p>
+            <BrandLogo size="md" />
             <p className="mt-2 text-[9.5px] font-medium tracking-[0.18em] text-[#8d8779] uppercase">
               Panel Admin
             </p>
@@ -132,9 +131,7 @@ export function AdminLoginScreen() {
         <section className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
           <div className="w-full max-w-[420px]">
             <div className="lg:hidden">
-              <p className="text-[19px] tracking-[0.02em] text-ink">
-                Galeri<span className="text-amber">Budaya</span>
-              </p>
+              <BrandLogo surface="light" size="md" />
               <p className="mt-2 text-[9.5px] font-medium tracking-[0.18em] text-muted uppercase">
                 Panel Admin
               </p>

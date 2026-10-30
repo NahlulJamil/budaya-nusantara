@@ -71,6 +71,7 @@ export interface UserSummary {
   username: string;
   email: string;
   role: string;
+  created_at?: string | null;
 }
 
 export interface UserLoginResponse {
@@ -134,7 +135,7 @@ function parseErrors(value: unknown): Record<string, string[]> {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PATCH";
   token?: string | null;
   body?: unknown;
   timeoutMs?: number;
@@ -239,6 +240,33 @@ export async function loginUser(
 
 export async function fetchUserMe(token: string): Promise<UserMeResponse> {
   return userRequest<UserMeResponse>("/me", { token });
+}
+
+export async function updateUserProfile(
+  token: string,
+  username: string,
+): Promise<UserMeResponse> {
+  return userRequest<UserMeResponse>("/me", {
+    method: "PATCH",
+    token,
+    body: { username },
+  });
+}
+
+export async function fetchMyGaleri(
+  token: string,
+  params: { per_page?: number; page?: number } = {},
+): Promise<GaleriListResponse> {
+  const query = new URLSearchParams();
+  if (params.per_page) {
+    query.set("per_page", String(params.per_page));
+  }
+  if (params.page && params.page > 1) {
+    query.set("page", String(params.page));
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+
+  return userRequest<GaleriListResponse>(`/galeri-saya${suffix}`, { token });
 }
 
 export async function logoutUser(token: string): Promise<void> {

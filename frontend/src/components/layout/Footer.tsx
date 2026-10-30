@@ -86,7 +86,6 @@ export function Footer() {
               ))}
             </ul>
             <p className="mt-2 max-w-[15rem] text-[11px] leading-[1.7] text-[#8d8779]">
-              Upload dan profil memerlukan login.
             </p>
           </div>
         </div>

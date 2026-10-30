@@ -169,6 +169,7 @@ class GaleriController extends Controller
             'location' => $post->location,
             'activity_date' => $post->activity_date,
             'status' => $post->status,
+            'created_at' => $post->created_at?->toIso8601String(),
             'author' => $post->user ? [
                 'id' => $post->user->id,
                 'username' => $post->user->username,

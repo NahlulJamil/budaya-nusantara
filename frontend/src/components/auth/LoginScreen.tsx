@@ -22,6 +22,21 @@ const MAX_EMAIL = 255;
 const SUBMIT_CLASS =
   "focus-ring inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#0d0d0b] px-4 text-[13px] font-medium text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-65";
 
+/** Hanya izinkan path internal agar parameter `next` tidak membuka situs luar. */
+function resolveNextPath(): string {
+  if (typeof window === "undefined") {
+    return "/galeri";
+  }
+
+  const next = new URLSearchParams(window.location.search).get("next");
+
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    return next;
+  }
+
+  return "/galeri";
+}
+
 export function LoginScreen() {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -90,7 +105,7 @@ export function LoginScreen() {
     try {
       const response = await loginUser(email.trim(), password);
       writeUserToken(response.data.token, remember);
-      router.replace("/galeri");
+      router.replace(resolveNextPath());
     } catch (error) {
       if (error instanceof UserApiError) {
         const nextErrors: Record<string, string> = {};

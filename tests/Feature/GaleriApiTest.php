@@ -112,6 +112,7 @@ class GaleriApiTest extends TestCase
         $titles = collect($r->json('data'))->pluck('title');
         $this->assertTrue($titles->contains('Setuju 1') && $titles->contains('Tunggu'));
         $this->assertFalse($titles->contains('Setuju 2'));
+        $this->assertIsString($r->json('data.0.created_at'));
     }
 
     public function test_store_publishes_immediately_and_validates(): void

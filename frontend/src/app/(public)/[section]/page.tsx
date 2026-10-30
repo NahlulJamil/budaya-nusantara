@@ -16,11 +16,6 @@ const SECTIONS: Record<
   string,
   { title: string; description: string; eyebrow?: string }
 > = {
-  profil: {
-    title: "Profil",
-    description:
-      "Masuk, profil pengguna, dan daftar kiriman akan tersedia pada tahap berikutnya.",
-  },
   tentang: {
     title: "Tentang Kami",
     description:

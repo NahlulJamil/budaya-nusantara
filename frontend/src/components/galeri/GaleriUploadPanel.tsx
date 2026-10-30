@@ -778,8 +778,7 @@ function UploadForm({ token, user, onLogout, onUploaded }: UploadFormProps) {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-[380px] text-[11px] leading-[1.65] text-muted">
-            Kiriman yang valid langsung tampil di galeri publik. Kamu tetap bisa
-            melaporkan kiriman yang tidak pantas.
+            Kiriman yang valid langsung tampil di galeri publik.
           </p>
           <button
             type="submit"
@@ -826,8 +825,7 @@ export function GaleriUploadPanel({
       </h2>
       <p className="mt-2 max-w-[560px] text-[12.5px] leading-[1.75] text-muted">
         Unggah foto tradisi, kuliner, atau pertunjukan yang kamu temui. Kiriman
-        yang valid langsung tampil di galeri publik — tanpa menunggu persetujuan
-        admin.
+        yang valid langsung tampil di galeri publik.
       </p>
 
       {sessionLoading ? (

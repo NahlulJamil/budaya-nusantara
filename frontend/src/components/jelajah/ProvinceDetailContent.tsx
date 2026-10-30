@@ -19,7 +19,7 @@ const CATEGORIES = [
 export function ProvinceDetailContent({ province }: ProvinceDetailContentProps) {
   return (
     <main id="main" className="bg-[#F8F6EF] pb-20">
-      <section className="relative h-[400px] sm:h-[500px] lg:h-[600px] w-full overflow-hidden">
+      <section className="relative h-[calc(100svh-72px)] min-h-[420px] w-full overflow-hidden">
         <Image src={province.image} alt={province.name} fill className="object-cover" priority sizes="100vw" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 shell pb-8 sm:pb-12 lg:pb-16">
